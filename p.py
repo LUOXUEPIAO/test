@@ -1,75 +1,56 @@
-
-from tensorflow.keras.utils import to_categorical
 import numpy as np
-import matplotlib.pyplot as plt
-import sys
+import os
+from pandas import get_dummies
+import tensorflow as tf
+from tensorflow import keras
 import cv2
-from tensorflow.keras import regularizers
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense,Dropout,Activation,Flatten
-from tensorflow.keras.layers import Conv2D,MaxPooling2D,BatchNormalization
-from tensorflow.keras.optimizers import SGD,Adam,RMSprop
-from tensorflow.keras.callbacks import TensorBoard
-from tensorflow.keras.preprocessing.image import ImageDataGenerator
-IMG_CHANNELS=3
-weight_decay = 0.0005
-IMG_ROWS=224
-IMG_COLS=224
-BATCH_SIZE=64
-NB_EPOCH=10
-NB_CLASSES=2
-VERBOSE=1
-data_gen = ImageDataGenerator(rescale=1./255, validation_split=0.2)
-train_genrendata = data_gen.flow_from_directory(
-    'D:/garbage_classify',
-    target_size=(224, 224),  # resize图片
-    batch_size=8,
-    class_mode='binary'
-)
-test_genrendata = data_gen.flow_from_directory(
-    'D:/Download/test',
-    target_size=(224, 224),  # resize图片
-    batch_size=8,
-    class_mode='binary'
-)
-model = Sequential()
-model.add(Conv2D(32, (3, 3), padding='same',
-                 input_shape=(IMG_ROWS, IMG_COLS, 3), kernel_regularizer=regularizers.l2(weight_decay)))
-model.add(Activation('relu'))
-model.add(BatchNormalization())
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(64, (3, 3), padding='same', kernel_regularizer=regularizers.l2(weight_decay)))
-model.add(Activation('relu'))
-model.add(BatchNormalization())
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(64, (3, 3), padding='same', kernel_regularizer=regularizers.l2(weight_decay)))
-model.add(Activation('relu'))
-model.add(BatchNormalization())
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(128, (3, 3), padding='same', kernel_regularizer=regularizers.l2(weight_decay)))
-model.add(Activation('relu'))
-model.add(BatchNormalization())
-model.add(MaxPooling2D(pool_size=(2, 2)))
-model.add(Conv2D(128, (3, 3), padding='same', kernel_regularizer=regularizers.l2(weight_decay)))
-model.add(Activation('relu'))
-model.add(BatchNormalization())
-model.add(MaxPooling2D(pool_size=(2, 2)))
-# layer14 1*1*512
-model.add(Flatten())
-model.add(Dense(128, kernel_regularizer=regularizers.l2(weight_decay)))
-model.add(Activation('relu'))
-model.add(BatchNormalization())
-model.add(Dense(40))
-model.add(Activation('softmax'))
-# 10
-model.summary()
+import matplotlib.pyplot as plt
+from PIL import  Image
 
-model.compile(loss='categorical_crossentropy',optimizer=Adam(lr=1e-4), metrics=['accuracy'])
-model.fit(train_genrendata,epochs=10, steps_per_epoch=100)
-score=model.evaluate(x_test,y_test,batch_size=BATCH_SIZE,verbose=VERBOSE)
-print("Test score:",score[0])
-print("Test accuracy:",score[1])
-model_json=model.to_json()
-open('cifar10_architecture.json','w').write(model_json)
-#and the weights learnde by out deep network on the training set
-model.save_weights('cifar10_weights.h5',overwrite=True)
+def get_files(file_path):
+    class_train = []
+    label_train = []
+    for train_class in os.listdir(file_path):
+        for pic_name in os.listdir(file_path + train_class):
+            class_train.append(file_path + train_class + '/' + pic_name)
+            label_train.append(train_class)
+    temp = np.array([class_train, label_train])
+    temp = temp.transpose()
+
+    np.random.shuffle(temp)
+
+    image_list = list(temp[:, 0])
+    label_list = list(temp[:, 1])
+
+    label_list = [int(i) for i in label_list]
+    return image_list, label_list
+
+
+
+train_imgs,train_lab = get_files("D:/garbage_classify/")
+
+def Img():
+    images = np.empty((14000,224,224,1),dtype="float32")
+    count=0
+    for i in train_imgs:
+        if count >= 14000:
+            break
+        img = cv2.imread(i,0)
+        img = cv2.resize(img, (224, 224 ))
+        #img = cv2.copyMakeBorder(img, 50, 50, 50, 50, cv2.BORDER_CONSTANT, value=(0, 0, 0))
+        if img.shape == 4:
+            img = img[:, :, :3]
+        cv2.waitKey(0)
+        cv2.destroyAllWindows()
+        img = np.array(img)
+        img = np.expand_dims(img, axis=2)
+        images[count, :, :, :] = img
+        count=count+1
+    return images
+train_images = Img()
+lables = np.array(train_lab)
+lables = get_dummies(lables)
+train_lables = lables.values
+print(train_images)
+
+
