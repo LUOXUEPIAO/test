@@ -6,6 +6,14 @@ from tensorflow import keras
 import cv2
 import matplotlib.pyplot as plt
 from PIL import  Image
+from tensorflow.keras import regularizers
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense,Dropout,Activation,Flatten
+from tensorflow.keras.layers import Conv2D,MaxPooling2D,BatchNormalization
+from tensorflow.keras.optimizers import SGD,Adam,RMSprop
+from tensorflow.keras.callbacks import TensorBoard
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.utils import to_categorical
 
 def get_files(file_path):
     class_train = []
@@ -60,9 +68,51 @@ test_lables = tlables.values
 val_indices = np.random.choice(len(test_images),round(len(test_images)*0.5),replace=True)
 val_images = test_images[val_indices]
 val_lables = test_lables[val_indices]
-print(train_images.shape)
+'''print(train_images.shape)
 print(train_lables.shape)
 print(test_images.shape)
 print(test_lables.shape)
 print(val_images.shape)
-print(val_lables.shape)
+print(val_lables.shape)'''
+weight_decay=0.0005
+model = Sequential()
+model.add(Conv2D(32, (3, 3), padding='same',
+                 input_shape=(224, 224, 1), kernel_regularizer=regularizers.l2(weight_decay)))
+model.add(Activation('relu'))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(64, (3, 3), padding='same', kernel_regularizer=regularizers.l2(weight_decay)))
+model.add(Activation('relu'))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(64, (3, 3), padding='same', kernel_regularizer=regularizers.l2(weight_decay)))
+model.add(Activation('relu'))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(128, (3, 3), padding='same', kernel_regularizer=regularizers.l2(weight_decay)))
+model.add(Activation('relu'))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2, 2)))
+model.add(Conv2D(128, (3, 3), padding='same', kernel_regularizer=regularizers.l2(weight_decay)))
+model.add(Activation('relu'))
+model.add(BatchNormalization())
+model.add(MaxPooling2D(pool_size=(2, 2)))
+# layer14 1*1*512
+model.add(Flatten())
+model.add(Dense(128, kernel_regularizer=regularizers.l2(weight_decay)))
+model.add(Activation('relu'))
+model.add(BatchNormalization())
+model.add(Dense(40))
+model.add(Activation('softmax'))
+# 10
+model.summary()
+model.compile(optimizer=tf.keras.optimizers.Adam(0.001),
+             loss=tf.keras.losses.categorical_crossentropy,
+             metrics=[tf.keras.metrics.categorical_accuracy])
+model.fit(train_images, train_lables, epochs=6, batch_size=8)
+model.evaluate(test_images, test_lables, batch_size=32)
+result = model.predict(test_images, batch_size=32)
+print(np.argmax(result, axis=1))
+print(np.argmax(test_lables, axis=1))
+
+
